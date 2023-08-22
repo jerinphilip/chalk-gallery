@@ -19,15 +19,17 @@ red = Color("#ff0000")
 green = Color("#00ff00")
 gold = Color("#ffff00")
 blue = Color("#0000ff")
+grey = Color("#cccccc")
 
-LINE_WIDTH = 0.1
+LINE_WIDTH = 0.05
 
 
 def Cube(side: int = 3):
     # Assemble cube
-    face_m = rectangle(side, side).align_tl()
-    face_t = rectangle(side, side / 2).shear_x(-1).align_bl()
-    face_r = rectangle(side / 2, side).shear_y(-1).align_tr()
+    line_width = 0.025
+    face_m = rectangle(side, side).line_width(line_width).align_tl()
+    face_t = rectangle(side, side / 2).line_width(line_width).shear_x(-1).align_bl()
+    face_r = rectangle(side / 2, side).line_width(line_width).shear_y(-1).align_tr()
     cube = (face_t + face_m).align_tr() + face_r
 
     # Replace envelope with front face.
@@ -46,14 +48,16 @@ def Tensor(depth, rows, columns):
     ).align_t()
 
     # Build depth
-    return concat(
+    cube3d = concat(
         front.translate(-k * hyp.x, -k * hyp.y) for k in reversed(range(depth))
     ).center_xy()
+
+    return cube3d
 
 
 def Block(
     label: str,
-    width: int = 100,
+    width: int = 80,
     height: int = 24,
     stroke: Color = black,
     fill: Color = white,
@@ -74,7 +78,7 @@ def Block(
         .line_width(0)
         .fill_color(black)
         .with_envelope(bounding_rect)
-    ).center_xy()
+    ).translate(0, height / 16)
 
     return container + render_label
 
@@ -84,30 +88,84 @@ if __name__ == "__main__":
     parser.add_argument("--path", type=str, required=True)
     args = parser.parse_args()
 
-    embedding = Block("Embedding").center_xy()
-    embedding_out = Tensor(depth=3, rows=1, columns=24)
-    encoder = Block("Encoder").center_xy()
+    embedding = Block("Embed").center_xy().named("embed")
+    embedding_out = Tensor(depth=3, rows=1, columns=24).named("embed_out")
+    encoder = Block("Encoder").center_xy().named("encoder")
 
     def Token(text):
         return Block(text, width=24, height=12)
 
-    tokens = hcat([Token("1"), Token("2"), Token("eos")], 3).center_xy()
+    labels = ["1", "2", "eos"]
+    tokens = empty()
+    for i, label in enumerate(reversed(labels)):
+        n = len(labels)
+        factor = 10
+        tokens = tokens + Token(label).translate(
+            (n - i) * factor, -1 * (n - i) * factor
+        )
 
-    encoder_stack = vcat([encoder, embedding_out, embedding, tokens], 12).center_xy()
+    tokens = tokens.center_xy().named("encoder_tokens")
 
-    decoder = Block("Decoder").center_xy()
+    spacing = 18
+    encoder_stack = vcat(
+        [encoder, embedding_out, embedding, tokens], spacing
+    ).center_xy()
+
+    arrow_pad = 4
+    default_arrow_opts = {
+        "head_pad": arrow_pad,
+        "tail_pad": arrow_pad,
+        "head_arrow": triangle(1),
+        "head_style": Style.empty().fill_color(grey),
+        "arc_height": 0.5,
+        "shaft_style": Style.empty().line_color(blue),
+    }
+
+    arrow0 = encoder_stack.connect_outside(
+        "encoder_tokens",
+        "embed",
+        ArrowOpts(**default_arrow_opts),
+    )
+
+    # arrow1 = encoder_stack.connect_outside(
+    #     "encoder_embed",
+    #     "encoder_embed_out",
+    #     ArrowOpts(**default_arrow_opts),
+    # )
+
+    # arrow2 = encoder_stack.connect_outside(
+    #     "encoder_embed_out",
+    #     "encoder_encoder",
+    #     ArrowOpts(**default_arrow_opts),
+    # )
+
+    encoder_stack = encoder_stack + arrow0  # + arrow1 + arrow2
+
+    decoder = Block("Decoder").center_xy().named("decoder")
     decoder_unrolled = []
     predictions = ["1", "2", "eos"]
     decoder_steps = ["", "1", "2"]
     for decoder_step, prediction in zip(decoder_steps, predictions):
-        decoder_token = Token(decoder_step)
-        predicted_token = Token(prediction)
+        decoder_token = Token(decoder_step).named("decoder_token")
+        predicted_token = Token(prediction).named("predicted_token")
         decoder_stack = vcat(
-            [predicted_token, decoder, embedding_out, embedding, decoder_token], 12
+            [predicted_token, decoder, embedding_out, embedding, decoder_token], spacing
         ).center_xy()
+
+        a0 = decoder_stack.connect_outside(
+            "decoder_token", "embed", ArrowOpts(**default_arrow_opts)
+        )
+
+        a3 = decoder_stack.connect_outside(
+            "decoder", "predicted_token", ArrowOpts(**default_arrow_opts)
+        )
+
+        decoder_stack = decoder_stack + a0 + a3
+
         decoder_unrolled.append(decoder_stack)
 
-    decoder_unrolled = hcat(decoder_unrolled, 12).center_xy()
+    decoder_unrolled = hcat(decoder_unrolled, 2 * spacing).center_xy()
+    encoder_stack = encoder_stack.translate(0, 2 * spacing)
 
-    diagram = hcat([encoder_stack, decoder_unrolled], 12).center_xy()
+    diagram = hcat([encoder_stack, decoder_unrolled], 4 * spacing).center_xy()
     diagram.render_svg(args.path, height=512)
