@@ -2,6 +2,9 @@ from PIL import Image as PILImage
 from chalk import *
 from colour import Color
 from chalk import BoundingBox
+from copy import deepcopy
+
+from chalk.shapes.arrowheads import ArrowHead, dart, tri  # noqa: F401
 
 
 import math
@@ -111,14 +114,16 @@ if __name__ == "__main__":
         [encoder, embedding_out, embedding, tokens], spacing
     ).center_xy()
 
-    arrow_pad = 4
+    arrow_pad = 3
     default_arrow_opts = {
         "head_pad": arrow_pad,
         "tail_pad": arrow_pad,
-        "head_arrow": triangle(1),
-        "head_style": Style.empty().fill_color(grey),
-        "arc_height": 0.5,
-        "shaft_style": Style.empty().line_color(blue),
+        "head_arrow": dart().scale(3).translate(2, 0),
+        # "head_arrow": triangle(3),
+        "head_style": Style.empty().fill_color(black),
+        # "arc_height": 0.5,
+        "arc_height": 0.0,
+        "shaft_style": Style.empty().line_color(black),
     }
 
     arrow0 = encoder_stack.connect_outside(
@@ -141,15 +146,24 @@ if __name__ == "__main__":
 
     encoder_stack = encoder_stack + arrow0  # + arrow1 + arrow2
 
-    decoder = Block("Decoder").center_xy().named("decoder")
+    decoder = Block("Decoder").center_xy()
     decoder_unrolled = []
     predictions = ["1", "2", "eos"]
     decoder_steps = ["", "1", "2"]
-    for decoder_step, prediction in zip(decoder_steps, predictions):
+    for t, (decoder_step, prediction) in enumerate(zip(decoder_steps, predictions)):
+        decoder_instance = decoder
+        decoder_instance = decoder_instance.named("decoder_" + str(t))
         decoder_token = Token(decoder_step).named("decoder_token")
         predicted_token = Token(prediction).named("predicted_token")
         decoder_stack = vcat(
-            [predicted_token, decoder, embedding_out, embedding, decoder_token], spacing
+            [
+                predicted_token,
+                decoder_instance,
+                embedding_out,
+                embedding,
+                decoder_token,
+            ],
+            spacing,
         ).center_xy()
 
         a0 = decoder_stack.connect_outside(
@@ -157,14 +171,21 @@ if __name__ == "__main__":
         )
 
         a3 = decoder_stack.connect_outside(
-            "decoder", "predicted_token", ArrowOpts(**default_arrow_opts)
+            "decoder_" + str(t), "predicted_token", ArrowOpts(**default_arrow_opts)
         )
 
         decoder_stack = decoder_stack + a0 + a3
-
         decoder_unrolled.append(decoder_stack)
 
     decoder_unrolled = hcat(decoder_unrolled, 2 * spacing).center_xy()
+    for t in range(1, len(predictions)):
+        a = decoder_unrolled.connect_outside(
+            "decoder_" + str(t - 1),
+            "decoder_" + str(t),
+            ArrowOpts(**default_arrow_opts),
+        )
+        decoder_unrolled = decoder_unrolled + a
+
     encoder_stack = encoder_stack.translate(0, 2 * spacing)
 
     diagram = hcat([encoder_stack, decoder_unrolled], 4 * spacing).center_xy()
