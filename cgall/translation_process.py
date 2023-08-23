@@ -94,6 +94,7 @@ if __name__ == "__main__":
     embedding = Block("Embed").center_xy().named("embed")
     # embedding_out = Tensor(depth=3, rows=1, columns=24).named("embed_out")
     encoder = Block("Encoder").center_xy().named("encoder")
+    encoder_out = square(1).fill_color(None).named("encoder_out")
 
     def Token(text):
         return Block(text, width=24, height=12)
@@ -109,7 +110,7 @@ if __name__ == "__main__":
 
     tokens = tokens.center_xy().named("encoder_tokens")
 
-    spacing = 18
+    spacing = 12
     encoder_stack = vcat(
         [
             encoder,
@@ -119,6 +120,7 @@ if __name__ == "__main__":
         ],
         spacing,
     ).center_xy()
+    encoder_stack = vcat([encoder_out, encoder_stack], 1).center_xy()
 
     arrow_pad = 3
     default_arrow_opts = {
@@ -156,6 +158,22 @@ if __name__ == "__main__":
         "head_pad": 0,
         "tail_pad": 0,
         "arc_height": 0,
+        "shaft_style": Style.empty().line_color(grey),
+    }
+
+    trail = Trail.from_offsets(
+        [
+            V2(0, -1),
+            V2(4, 0),
+            V2(0, 6),
+            V2(4, 0),
+        ]
+    )
+
+    edconn_main = {
+        "head_pad": 0,
+        "tail_pad": 0,
+        "arc_height": -5,
         "shaft_style": Style.empty().line_color(grey),
     }
 
@@ -242,10 +260,10 @@ if __name__ == "__main__":
 
         decoder_unrolled = a_edconn + decoder_unrolled + a
 
-    encoder_stack = encoder_stack.translate(0, 2 * spacing)
+    encoder_stack = encoder_stack.translate(0, spacing)
 
     diagram = hcat([encoder_stack, decoder_unrolled], 2 * spacing).center_xy()
-    a = diagram.connect_outside("encoder", "decoder_0_in", ArrowOpts(**bent_arrow_opts))
+    a = diagram.connect_outside("encoder_out", "decoder_0_in", ArrowOpts(**edconn_main))
     diagram = diagram + a
 
     diagram.render_svg(args.path, height=512)
