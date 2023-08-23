@@ -3,6 +3,8 @@ from chalk import *
 from colour import Color
 from chalk import BoundingBox
 from copy import deepcopy
+from .color_map import Pastel2, Set3, tab20
+from random import shuffle
 
 from chalk.shapes.arrowheads import ArrowHead, dart, tri  # noqa: F401
 
@@ -13,7 +15,6 @@ import random
 from itertools import product
 from argparse import ArgumentParser
 
-random.seed(0)
 
 # Data is a nested structure.
 black = Color("#000000")
@@ -23,6 +24,7 @@ green = Color("#00ff00")
 gold = Color("#ffff00")
 blue = Color("#0000ff")
 grey = Color("#cccccc")
+
 
 LINE_WIDTH = 0.05
 
@@ -89,15 +91,21 @@ def Block(
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("--path", type=str, required=True)
+    parser.add_argument("--seed", type=int, default=None)
     args = parser.parse_args()
 
-    embedding = Block("Embed").center_xy().named("embed")
+    if args.seed:
+        random.seed(args.seed)
+
+    ColorSet = tab20.copy()
+
+    embedding = Block("Embed", fill=ColorSet[0]).center_xy().named("embed")
     # embedding_out = Tensor(depth=3, rows=1, columns=24).named("embed_out")
-    encoder = Block("Encoder").center_xy().named("encoder")
+    encoder = Block("Encoder", fill=ColorSet[1]).center_xy().named("encoder")
     encoder_out = square(1).fill_color(None).named("encoder_out")
 
     def Token(text):
-        return Block(text, width=24, height=12)
+        return Block(text, width=24, height=12, fill=ColorSet[5])
 
     labels = ["1", "2", "eos"]
     tokens = empty()
@@ -203,7 +211,7 @@ if __name__ == "__main__":
 
     encoder_stack = encoder_stack + arrow0 + arrow1  # + arrow2
 
-    decoder = Block("Decoder").center_xy()
+    decoder = Block("Decoder", fill=ColorSet[4]).center_xy()
     decoder_unrolled = []
     predictions = ["1", "2", "eos"]
     decoder_steps = ["", "1", "2"]
