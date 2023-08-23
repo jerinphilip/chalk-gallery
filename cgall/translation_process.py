@@ -60,13 +60,13 @@ def Tensor(depth, rows, columns):
 
 def Block(
     label: str,
-    width: int = 80,
+    width: int = 60,
     height: int = 24,
     stroke: Color = black,
     fill: Color = white,
 ):
     radius = min(width, height) / 20
-    font_size = min(width, height) / 2
+    font_size = min(width, height) / 3
     container = (
         rectangle(width, height, radius)
         .line_color(stroke)
@@ -92,7 +92,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     embedding = Block("Embed").center_xy().named("embed")
-    embedding_out = Tensor(depth=3, rows=1, columns=24).named("embed_out")
+    # embedding_out = Tensor(depth=3, rows=1, columns=24).named("embed_out")
     encoder = Block("Encoder").center_xy().named("encoder")
 
     def Token(text):
@@ -111,7 +111,13 @@ if __name__ == "__main__":
 
     spacing = 18
     encoder_stack = vcat(
-        [encoder, embedding_out, embedding, tokens], spacing
+        [
+            encoder,
+            # embedding_out,
+            embedding,
+            tokens,
+        ],
+        spacing,
     ).center_xy()
 
     arrow_pad = 3
@@ -124,6 +130,33 @@ if __name__ == "__main__":
         # "arc_height": 0.5,
         "arc_height": 0.0,
         "shaft_style": Style.empty().line_color(black),
+    }
+
+    bent_arrow_opts = {
+        "head_pad": arrow_pad,
+        "tail_pad": arrow_pad,
+        "head_arrow": dart().scale(3).translate(2, 0).reflect_x(),
+        # "head_arrow": triangle(3),
+        "head_style": Style.empty().fill_color(black),
+        "arc_height": -5,
+        "shaft_style": Style.empty().line_color(black),
+    }
+
+    edconn = {
+        "head_pad": arrow_pad,
+        "tail_pad": 0,
+        "head_arrow": dart().scale(3).translate(2, 0),
+        # "head_arrow": triangle(3),
+        "head_style": Style.empty().fill_color(black),
+        "arc_height": 0,
+        "shaft_style": Style.empty().line_color(black),
+    }
+
+    edconn_bg = {
+        "head_pad": 0,
+        "tail_pad": 0,
+        "arc_height": 0,
+        "shaft_style": Style.empty().line_color(grey),
     }
 
     arrow0 = encoder_stack.connect_outside(
@@ -144,7 +177,13 @@ if __name__ == "__main__":
     #     ArrowOpts(**default_arrow_opts),
     # )
 
-    encoder_stack = encoder_stack + arrow0  # + arrow1 + arrow2
+    arrow1 = encoder_stack.connect_outside(
+        "embed",
+        "encoder",
+        ArrowOpts(**default_arrow_opts),
+    )
+
+    encoder_stack = encoder_stack + arrow0 + arrow1  # + arrow2
 
     decoder = Block("Decoder").center_xy()
     decoder_unrolled = []
@@ -152,14 +191,16 @@ if __name__ == "__main__":
     decoder_steps = ["", "1", "2"]
     for t, (decoder_step, prediction) in enumerate(zip(decoder_steps, predictions)):
         decoder_instance = decoder
-        decoder_instance = decoder_instance.named("decoder_" + str(t))
+        identifier = "decoder_" + str(t)
+        decoder_instance = decoder_instance.named(identifier)
         decoder_token = Token(decoder_step).named("decoder_token")
         predicted_token = Token(prediction).named("predicted_token")
         decoder_stack = vcat(
             [
                 predicted_token,
                 decoder_instance,
-                embedding_out,
+                # embedding_out,
+                circle(1).fill_color(black).translate(-12, 0).named(identifier + "_in"),
                 embedding,
                 decoder_token,
             ],
@@ -170,23 +211,41 @@ if __name__ == "__main__":
             "decoder_token", "embed", ArrowOpts(**default_arrow_opts)
         )
 
-        a3 = decoder_stack.connect_outside(
-            "decoder_" + str(t), "predicted_token", ArrowOpts(**default_arrow_opts)
+        a1 = decoder_stack.connect_outside(
+            "embed", identifier, ArrowOpts(**bent_arrow_opts)
         )
 
-        decoder_stack = decoder_stack + a0 + a3
+        a2 = decoder_stack.connect_outside(
+            identifier + "_in", identifier, ArrowOpts(**edconn)
+        )
+
+        a3 = decoder_stack.connect_outside(
+            identifier, "predicted_token", ArrowOpts(**default_arrow_opts)
+        )
+
+        decoder_stack = decoder_stack + a0 + a1 + a2 + a3
         decoder_unrolled.append(decoder_stack)
 
-    decoder_unrolled = hcat(decoder_unrolled, 2 * spacing).center_xy()
+    decoder_unrolled = hcat(decoder_unrolled, 1.5 * spacing).center_xy()
     for t in range(1, len(predictions)):
         a = decoder_unrolled.connect_outside(
             "decoder_" + str(t - 1),
             "decoder_" + str(t),
             ArrowOpts(**default_arrow_opts),
         )
-        decoder_unrolled = decoder_unrolled + a
+
+        a_edconn = decoder_unrolled.connect_outside(
+            "decoder_" + str(t - 1) + "_in",
+            "decoder_" + str(t) + "_in",
+            ArrowOpts(**edconn_bg),
+        )
+
+        decoder_unrolled = decoder_unrolled + a + a_edconn
 
     encoder_stack = encoder_stack.translate(0, 2 * spacing)
 
-    diagram = hcat([encoder_stack, decoder_unrolled], 4 * spacing).center_xy()
+    diagram = hcat([encoder_stack, decoder_unrolled], 2 * spacing).center_xy()
+    a = diagram.connect_outside("encoder", "decoder_0_in", ArrowOpts(**bent_arrow_opts))
+    diagram = diagram + a
+
     diagram.render_svg(args.path, height=512)
