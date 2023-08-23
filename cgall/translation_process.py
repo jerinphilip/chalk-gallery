@@ -60,8 +60,8 @@ def Tensor(depth, rows, columns):
 
 def Block(
     label: str,
-    width: int = 60,
-    height: int = 24,
+    width: int = 40,
+    height: int = 18,
     stroke: Color = black,
     fill: Color = white,
 ):
@@ -240,7 +240,7 @@ if __name__ == "__main__":
             ArrowOpts(**edconn_bg),
         )
 
-        decoder_unrolled = decoder_unrolled + a + a_edconn
+        decoder_unrolled = a_edconn + decoder_unrolled + a
 
     encoder_stack = encoder_stack.translate(0, 2 * spacing)
 
