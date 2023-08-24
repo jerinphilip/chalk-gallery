@@ -2,7 +2,7 @@ from PIL import Image as PILImage
 from chalk import *
 from colour import Color
 from chalk import BoundingBox
-
+from .color_map import qualitative
 
 import math
 import random
@@ -16,10 +16,11 @@ random.seed(0)
 # Data is a nested structure.
 black = Color("#000000")
 white = Color("#ffffff")
-red = Color("#ff0000")
-green = Color("#00ff00")
-gold = Color("#ffff00")
-blue = Color("#0000ff")
+red = Color("#d60000")
+green = Color("#00a600")
+gold = Color("#f6f622")
+blue = Color("#0000d6")
+
 
 module = (
     "Module",
@@ -64,7 +65,7 @@ basic_block = (
 )
 
 
-LINE_WIDTH = 0.1
+LINE_WIDTH = 0.025
 
 
 def bottom_up(data):
