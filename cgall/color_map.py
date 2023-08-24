@@ -1,4 +1,53 @@
 from colour import Color
+from collections import OrderedDict
+
+# ColorBrewer's qualitative maps, implemented using ListedColormap
+# for use with mpl.colors.NoNorm
+
+# Imported from:
+# https://github.com/matplotlib/matplotlib/blob/a4dca24d04f928a9e614db403c716237446140b2/lib/matplotlib/_cm.py#L856
+
+# Possibly originally taken from https://github.com/axismaps/colorbrewer
+# now available under Apache 2.0, which is a permissive license:
+# https://github.com/axismaps/colorbrewer/blob/7d135fc4e19eda73f2eb1bf55fcdf4a04fe4881f/LICENCE.txt.
+
+_Accent = (
+    (0.49803921568627452, 0.78823529411764703, 0.49803921568627452),
+    (0.74509803921568629, 0.68235294117647061, 0.83137254901960789),
+    (0.99215686274509807, 0.75294117647058822, 0.52549019607843139),
+    (1.0, 1.0, 0.6),
+    (0.2196078431372549, 0.42352941176470588, 0.69019607843137254),
+    (0.94117647058823528, 0.00784313725490196, 0.49803921568627452),
+    (0.74901960784313726, 0.35686274509803922, 0.09019607843137254),
+    (0.4, 0.4, 0.4),
+)
+
+_Dark2 = (
+    (0.10588235294117647, 0.61960784313725492, 0.46666666666666667),
+    (0.85098039215686272, 0.37254901960784315, 0.00784313725490196),
+    (0.45882352941176469, 0.4392156862745098, 0.70196078431372544),
+    (0.90588235294117647, 0.16078431372549021, 0.54117647058823526),
+    (0.4, 0.65098039215686276, 0.11764705882352941),
+    (0.90196078431372551, 0.6705882352941176, 0.00784313725490196),
+    (0.65098039215686276, 0.46274509803921571, 0.11372549019607843),
+    (0.4, 0.4, 0.4),
+)
+
+_Paired = (
+    (0.65098039215686276, 0.80784313725490198, 0.8901960784313725),
+    (0.12156862745098039, 0.47058823529411764, 0.70588235294117652),
+    (0.69803921568627447, 0.87450980392156863, 0.54117647058823526),
+    (0.2, 0.62745098039215685, 0.17254901960784313),
+    (0.98431372549019602, 0.60392156862745094, 0.6),
+    (0.8901960784313725, 0.10196078431372549, 0.10980392156862745),
+    (0.99215686274509807, 0.74901960784313726, 0.43529411764705883),
+    (1.0, 0.49803921568627452, 0.0),
+    (0.792156862745098, 0.69803921568627447, 0.83921568627450982),
+    (0.41568627450980394, 0.23921568627450981, 0.60392156862745094),
+    (1.0, 1.0, 0.6),
+    (0.69411764705882351, 0.34901960784313724, 0.15686274509803921),
+)
+
 
 _Pastel1 = (
     (0.98431372549019602, 0.70588235294117652, 0.68235294117647061),
@@ -145,29 +194,34 @@ _tab20c = (
 )
 
 
-import colorsys
-
-
 # fmt: off
-Set1 =    [ Color(rgb = t) for t in _Set1]
-Set2 =    [ Color(rgb = t) for t in _Set2]
-Set3 =    [ Color(rgb = t) for t in _Set3]
-tab10 =   [ Color(rgb = t) for t in _tab10]
-tab20 =   [ Color(rgb = t) for t in _tab20]
-tab20b =  [ Color(rgb = t) for t in _tab20b]
-tab20c =  [ Color(rgb = t) for t in _tab20c]
-Pastel1 = [ Color(rgb = t) for t in _Pastel1]
-Pastel2 = [ Color(rgb = t) for t in _Pastel2]
+Accent  = [ Color(rgb = t) for t in _Accent  ]
+Dark2   = [ Color(rgb = t) for t in _Dark2   ]
+Paired  = [ Color(rgb = t) for t in _Paired  ]
+Set1    = [ Color(rgb = t) for t in _Set1    ]
+Set2    = [ Color(rgb = t) for t in _Set2    ]
+Set3    = [ Color(rgb = t) for t in _Set3    ]
+tab10   = [ Color(rgb = t) for t in _tab10   ]
+tab20   = [ Color(rgb = t) for t in _tab20   ]
+tab20b  = [ Color(rgb = t) for t in _tab20b  ]
+tab20c  = [ Color(rgb = t) for t in _tab20c  ]
+Pastel1 = [ Color(rgb = t) for t in _Pastel1 ]
+Pastel2 = [ Color(rgb = t) for t in _Pastel2 ]
 # fmt: on
 
-qualitative = [
-    Pastel1,
-    Pastel2,
-    Set1,
-    Set2,
-    Set3,
-    tab10,
-    tab20,
-    tab20b,
-    tab20c,
-]
+qualitative = OrderedDict(
+    [
+        ("Pastel1", Pastel1),
+        ("Pastel2", Pastel2),
+        ("Accent", Accent),
+        ("Dark2", Dark2),
+        ("Paired", Paired),
+        ("Set1", Set1),
+        ("Set2", Set2),
+        ("Set3", Set3),
+        ("tab10", tab10),
+        ("tab20", tab20),
+        ("tab20b", tab20b),
+        ("tab20c", tab20c),
+    ]
+)

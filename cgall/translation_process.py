@@ -3,7 +3,7 @@ from chalk import *
 from colour import Color
 from chalk import BoundingBox
 from copy import deepcopy
-from .color_map import Pastel2, Set3, tab20
+from .color_map import qualitative
 from random import shuffle
 
 from chalk.shapes.arrowheads import ArrowHead, dart, tri  # noqa: F401
@@ -97,7 +97,7 @@ if __name__ == "__main__":
     if args.seed:
         random.seed(args.seed)
 
-    ColorSet = tab20.copy()
+    ColorSet = qualitative["Pastel1"]
 
     embedding = Block("Embed", fill=ColorSet[0]).center_xy().named("embed")
     # embedding_out = Tensor(depth=3, rows=1, columns=24).named("embed_out")
