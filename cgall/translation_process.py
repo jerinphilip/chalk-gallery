@@ -135,9 +135,7 @@ if __name__ == "__main__":
         "head_pad": arrow_pad,
         "tail_pad": arrow_pad,
         "head_arrow": dart().scale(3).translate(2, 0),
-        # "head_arrow": triangle(3),
         "head_style": Style.empty().fill_color(black),
-        # "arc_height": 0.5,
         "arc_height": 0.0,
         "shaft_style": Style.empty().line_color(black),
     }
@@ -145,8 +143,7 @@ if __name__ == "__main__":
     bent_arrow_opts = {
         "head_pad": arrow_pad,
         "tail_pad": arrow_pad,
-        "head_arrow": dart().scale(3).translate(2, 0).reflect_x(),
-        # "head_arrow": triangle(3),
+        "head_arrow": dart().scale(3).translate(2, 0),
         "head_style": Style.empty().fill_color(black),
         "arc_height": -5,
         "shaft_style": Style.empty().line_color(black),
@@ -156,7 +153,6 @@ if __name__ == "__main__":
         "head_pad": arrow_pad,
         "tail_pad": 0,
         "head_arrow": dart().scale(3).translate(2, 0),
-        # "head_arrow": triangle(3),
         "head_style": Style.empty().fill_color(black),
         "arc_height": 0,
         "shaft_style": Style.empty().line_color(black),
@@ -166,22 +162,6 @@ if __name__ == "__main__":
         "head_pad": 0,
         "tail_pad": 0,
         "arc_height": 0,
-        "shaft_style": Style.empty().line_color(grey),
-    }
-
-    trail = Trail.from_offsets(
-        [
-            V2(0, -1),
-            V2(4, 0),
-            V2(0, 6),
-            V2(4, 0),
-        ]
-    )
-
-    edconn_main = {
-        "head_pad": 0,
-        "tail_pad": 0,
-        "arc_height": -5,
         "shaft_style": Style.empty().line_color(grey),
     }
 
@@ -221,12 +201,13 @@ if __name__ == "__main__":
         decoder_instance = decoder_instance.named(identifier)
         decoder_token = Token(decoder_step).named("decoder_token")
         predicted_token = Token(prediction).named("predicted_token")
+        dtin = circle(1).fill_color(black).named(identifier + "_in").translate(-12, 0)
         decoder_stack = vcat(
             [
                 predicted_token,
                 decoder_instance,
                 # embedding_out,
-                circle(1).fill_color(black).translate(-12, 0).named(identifier + "_in"),
+                dtin,
                 embedding,
                 decoder_token,
             ],
@@ -249,7 +230,7 @@ if __name__ == "__main__":
             identifier, "predicted_token", ArrowOpts(**default_arrow_opts)
         )
 
-        decoder_stack = decoder_stack + a0 + a1 + a2 + a3
+        decoder_stack = decoder_stack + a0 + a1 + a2 + a3  # + a2 + a3
         decoder_unrolled.append(decoder_stack)
 
     decoder_unrolled = hcat(decoder_unrolled, 1.5 * spacing).center_xy()
@@ -271,7 +252,36 @@ if __name__ == "__main__":
     encoder_stack = encoder_stack.translate(0, spacing)
 
     diagram = hcat([encoder_stack, decoder_unrolled], 2 * spacing).center_xy()
-    a = diagram.connect_outside("encoder_out", "decoder_0_in", ArrowOpts(**edconn_main))
-    diagram = diagram + a
+
+    eout = diagram.get_subdiagram("encoder_out").get_location()
+    d0in = diagram.get_subdiagram("decoder_0_in").get_location()
+    print(eout)
+    print(d0in)
+
+    # Create an elbow connector.
+    dx = -1 * (eout.x - d0in.x)
+    dy = -1 * (eout.y - d0in.y)
+
+    up = 4
+    p0 = V2(0, 0)
+    p1 = V2(0, -1 * up)
+    p2 = V2(dx / 2, 0)
+    p3 = V2(0, (dy + up))
+    p4 = V2(dx / 2, 0)
+    print(eout + p1 + p2 + p3 + p4, d0in)
+    # assert p4 == d0in
+
+    trail = Trail.from_offsets([p0, p1, p2, p3, p4])
+
+    # edconn_main = {
+    #     "head_pad": 0,
+    #     "trail": trail,
+    #     "tail_pad": 0,
+    #     "shaft_style": Style.empty().line_color(grey),
+    # }
+
+    # a = diagram.connect("encoder_out", "decoder_0_in", ArrowOpts(**edconn_main))
+    elbow_connector = trail.stroke().line_color(grey).translate(eout.x, eout.y)
+    diagram = elbow_connector + diagram
 
     diagram.render_svg(args.path, height=512)
