@@ -19,11 +19,11 @@ from argparse import ArgumentParser
 # Data is a nested structure.
 black = Color("#000000")
 white = Color("#ffffff")
+grey = Color("#cccccc")
 red = Color("#ff0000")
 green = Color("#00ff00")
 gold = Color("#ffff00")
 blue = Color("#0000ff")
-grey = Color("#cccccc")
 
 
 LINE_WIDTH = 0.05
