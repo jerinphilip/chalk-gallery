@@ -149,6 +149,7 @@ def SSRU():
     )
 
     em = empty().with_envelope(forget)
+    junction = circle(1).with_envelope(forget)
 
     ct_ = (
         Node("$c_{t-1}$", line_width=0, fill=None, stroke=None)
@@ -166,28 +167,73 @@ def SSRU():
         .with_envelope(forget)
     )
 
+    ht = (
+        Node("$h_{t}$", line_width=0, fill=None, stroke=None)
+        .named("ht")
+        .with_envelope(forget)
+    )
+
     hspace = 2
     vspace = 2
 
     # fmt: off
-    row1 = hcat([ct_, mul.named("cf"), relu, add.named("cf+fx"), ct], hspace)
-    row2 = hcat([em, em, one_minus, mul.named("fx"), em,], hspace)
-    row3 = hcat([em, forget, em, W, em], hspace)
-    row4 = hcat([em, xt, em, em, em], hspace)
+    row1 = hcat([mul.named("cf"), em, add.named("cf+fx")], hspace)
+    row2 = hcat([em, one_minus, mul.named("fx")], hspace)
+    row3 = hcat([forget, em, W], hspace)
+    # row4 = hcat([junction, em, junction], hspace)
     # fmt: on
 
-    grid = vcat([row1, row2, row3, row4], vspace)
-    grid += grid.connect_outside("cf", "relu")
+    grid = vcat([row1, row2, row3], vspace)
+
+    grid += grid.connect_outside("cf", "cf+fx")
     grid += grid.connect_outside("forget", "cf")
-    # grid += grid.connect_outside("forget", "one_minus")
+    grid += grid.connect_outside("forget", "one_minus")
     grid += grid.connect_outside("one_minus", "fx")
     grid += grid.connect_outside("W", "fx")
-    grid += grid.connect_outside("relu", "cf+fx")
     grid += grid.connect_outside("fx", "cf+fx")
 
-    grid += grid.connect_outside("xt", "forget")
-    # grid += grid.connect_outside("xt", "W")
+    cf_plus_fx_loc = grid.get_subdiagram("cf+fx").boundary_from(V2(0, -1))
+    cf_plus_fx = grid.get_subdiagram("cf+fx")
+    envelope = cf_plus_fx.get_envelope()
+    above_cf_plus_fx = cf_plus_fx_loc + V2(0, -1 * (hspace + envelope.height / 2))
+    grid += relu.translate(*above_cf_plus_fx)
+
+    rnn_envelope = grid.get_envelope()
+    rnn_wrap = (
+        rectangle(rnn_envelope.width, rnn_envelope.height, radius=0.05)
+        .fill_color(green)
+        .line_color(green_fg)
+        .scale(1.04)
+    )
+    grid = rnn_wrap.center_xy() + grid.center_xy()
+
+    cf_loc = grid.get_subdiagram("cf").boundary_from(V2(-1, 0))
+    envelope = ct_.get_envelope()
+    beside_cf = cf_loc + V2(-1 * (hspace + envelope.width / 2), 0)
+    grid += ct_.translate(*beside_cf)
+
+    forget_loc = grid.get_subdiagram("forget").boundary_from(V2(0, 1))
+    envelope = forget.get_envelope()
+    below_forget = forget_loc + V2(0, 1 * (hspace + envelope.height / 2))
+    grid += xt.translate(*below_forget)
+
+    relu_absolute_loc = grid.get_subdiagram("relu").boundary_from(V2(0, -1))
+    relu_absolute = grid.get_subdiagram("relu")
+    envelope = relu_absolute.get_envelope()
+    above_relu_absolute = relu_absolute_loc + V2(0, -1 * (hspace + envelope.height / 2))
+    grid += ht.translate(*above_relu_absolute)
+
+    cf_plus_fx_loc = grid.get_subdiagram("cf+fx").boundary_from(V2(1, 0))
+    envelope = ct_.get_envelope()
+    beside_cf_plus_fx = cf_plus_fx_loc + V2(1 * (hspace + envelope.width / 2), 0)
+    grid += ct.translate(*beside_cf_plus_fx)
+
     grid += grid.connect_outside("ct_", "cf")
+    grid += grid.connect_outside("xt", "forget")
+    grid += grid.connect_outside("xt", "W")
+    grid += grid.connect_outside("cf+fx", "relu")
+    grid += grid.connect_outside("cf+fx", "ct")
+    grid += grid.connect_outside("relu", "ht")
     return grid
 
 
