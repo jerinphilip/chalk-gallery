@@ -9,6 +9,16 @@ black = Color("#000000")
 white = Color("#ffffff")
 grey = Color("#cccccc")
 
+green = Color("#e1f7d0")
+purple = Color("#dbacee")
+red = Color("#f9d1d1")
+blue = Color("#a2cdec")
+
+
+green_fg = Color("#6d8759")
+
+LATEX_SCALE = 2
+
 
 def Block(
     label: str,
@@ -30,6 +40,7 @@ def Block(
     bounding_rect = container.scale(0.9).center_xy()
     render_label = (
         latex(label)
+        .scale(LATEX_SCALE)
         .line_color(black)
         .line_width(0)
         .fill_color(black)
@@ -53,6 +64,7 @@ def Node(
     bounding_circle = container.scale(0.9).center_xy()
     render_label = (
         latex(label)
+        .scale(LATEX_SCALE)
         .line_color(black)
         .line_width(0)
         .fill_color(black)
@@ -66,30 +78,60 @@ if __name__ == "__main__":
     parser = basic_parser()
     args = parser.parse_args()
 
-    ht = Node("$h_t$").named("ht")
-    A = Block("A").named("A").center_xy()
+    ht = Node("$h_t$").fill_color(purple).named("ht")
+    A = Block("A").fill_color(green).named("A").center_xy()
 
     e = A.get_envelope()
     w, h = e.width, e.height
     dw, dh = 1, 1
+    pad = 0.5
     trail = Trail.from_offsets(
         [
             V2(dw, 0),
             V2(0, -1 * (h / 2 + dh)),
-            V2(-1 * (w + 2 * dw), 0),
+            V2(-1 * (2 * pad + w + 2 * dw), 0),
             V2(0, h / 2 + dh),
             V2(dw, 0),
         ]
     )
-    recurrent = trail.stroke().line_color(grey).translate(w / 2, 0) + dart().scale(
-        0.1
-    ).translate(-1 * w / 2, 0)
-    A = A + recurrent
+    recurrent = trail.stroke().line_color(grey).translate(
+        w / 2 + pad, 0
+    ) + dart().scale(0.5).translate(-1 * w / 2, 0)
 
-    xt = Node("$x_t$").named("xt")
-    vspace = 1
-    diagram = vcat([ht, A, xt], 1)
-    a1 = diagram.connect_outside("xt", "A")
-    a2 = diagram.connect_outside("A", "ht")
-    diagram = diagram + a1 + a2
+    xt = Node("$x_t$").fill_color(blue).named("xt")
+    vspace = 2
+    hspace = 2
+    stack = vcat([ht, A, xt], vspace).center_xy()
+    stack = stack + recurrent
+    a1 = stack.connect_outside("xt", "A")
+    a2 = stack.connect_outside("A", "ht")
+    single_recurrent = stack + a1 + a2
+
+    def Single(t, tl=None):
+        if tl is None:
+            tl = str(t)
+        ht = Node(f"$h_{{{tl}}}$").fill_color(purple).named(f"h{tl}")
+        xt = Node(f"$x_{{{tl}}}$").fill_color(blue).named(f"x{tl}")
+        name = "A_" + str(t)
+        single = vcat([ht, A.named(name), xt], vspace)
+        a1 = single.connect_outside(f"x{tl}", name)
+        a2 = single.connect_outside(name, f"h{tl}")
+        single = single + a1 + a2
+        return single.center_xy()
+
+    T = 3
+    equal = text("=", 1).fill_color(black)
+    diagram = hcat(
+        [single_recurrent, equal]
+        + [Single(t) for t in range(T - 1)]
+        + [empty(), Single(T - 1, "t")],
+        hspace,
+    )
+
+    for t in range(1, T):
+        previous = "A_" + str(t - 1)
+        this = "A_" + str(t)
+        a = diagram.connect_outside(previous, this)
+        diagram = diagram + a
+
     diagram.render_svg(args.path, height=512)
