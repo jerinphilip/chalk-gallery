@@ -12,6 +12,7 @@ grey = Color("#cccccc")
 green = Color("#e1f7d0")
 purple = Color("#dbacee")
 red = Color("#f9d1d1")
+yellow = Color("#f5ee9c")
 blue = Color("#a2cdec")
 
 
@@ -56,6 +57,7 @@ def Node(
     stroke: Color = black,
     fill: Color = white,
     line_width: float = 0.05,
+    latex_scale: float = LATEX_SCALE,
 ):
     container = (
         circle(radius).line_color(stroke).fill_color(fill).line_width(line_width)
@@ -64,7 +66,7 @@ def Node(
     bounding_circle = container.scale(0.9).center_xy()
     render_label = (
         latex(label)
-        .scale(LATEX_SCALE)
+        .scale(latex_scale)
         .line_color(black)
         .line_width(0)
         .fill_color(black)
@@ -74,17 +76,14 @@ def Node(
     return container + render_label
 
 
-if __name__ == "__main__":
-    parser = basic_parser()
-    args = parser.parse_args()
-
+def rnn_steps():
     ht = Node("$h_t$").fill_color(purple).named("ht")
     A = Block("A").fill_color(green).named("A").center_xy()
 
     e = A.get_envelope()
     w, h = e.width, e.height
     dw, dh = 1, 1
-    pad = 0.5
+    pad = 0
     trail = Trail.from_offsets(
         [
             V2(dw, 0),
@@ -120,7 +119,7 @@ if __name__ == "__main__":
         return single.center_xy()
 
     T = 3
-    equal = text("=", 1).fill_color(black)
+    equal = text("=", 12).fill_color(black).scale(1 / 12)
     diagram = hcat(
         [single_recurrent, equal]
         + [Single(t) for t in range(T - 1)]
@@ -134,4 +133,68 @@ if __name__ == "__main__":
         a = diagram.connect_outside(previous, this)
         diagram = diagram + a
 
+    return diagram
+
+
+def SSRU():
+    forget = Block("$W_f; b_f$").named("forget")
+
+    W = Block("$W$").named("W").with_envelope(forget)
+    add = Node("$+$", fill=yellow).with_envelope(forget)
+    mul = Node("$\\times$", fill=yellow).with_envelope(forget)
+    one_minus = Node("$1 - $", fill=yellow).named("one_minus").with_envelope(forget)
+
+    relu = (
+        Node("ReLU", fill=yellow, latex_scale=1.0).named("relu").with_envelope(forget)
+    )
+
+    em = empty().with_envelope(forget)
+
+    ct_ = (
+        Node("$c_{t-1}$", line_width=0, fill=None, stroke=None)
+        .named("ct_")
+        .with_envelope(forget)
+    )
+    ct = (
+        Node("$c_{t}$", line_width=0, fill=None, stroke=None)
+        .named("ct")
+        .with_envelope(forget)
+    )
+    xt = (
+        Node("$x_{t}$", line_width=0, fill=None, stroke=None)
+        .named("xt")
+        .with_envelope(forget)
+    )
+
+    hspace = 2
+    vspace = 2
+
+    # fmt: off
+    row1 = hcat([ct_, mul.named("cf"), relu, add.named("cf+fx"), ct], hspace)
+    row2 = hcat([em, em, one_minus, mul.named("fx"), em,], hspace)
+    row3 = hcat([em, forget, em, W, em], hspace)
+    row4 = hcat([em, xt, em, em, em], hspace)
+    # fmt: on
+
+    grid = vcat([row1, row2, row3, row4], vspace)
+    grid += grid.connect_outside("cf", "relu")
+    grid += grid.connect_outside("forget", "cf")
+    # grid += grid.connect_outside("forget", "one_minus")
+    grid += grid.connect_outside("one_minus", "fx")
+    grid += grid.connect_outside("W", "fx")
+    grid += grid.connect_outside("relu", "cf+fx")
+    grid += grid.connect_outside("fx", "cf+fx")
+
+    grid += grid.connect_outside("xt", "forget")
+    # grid += grid.connect_outside("xt", "W")
+    grid += grid.connect_outside("ct_", "cf")
+    return grid
+
+
+if __name__ == "__main__":
+    parser = basic_parser()
+    args = parser.parse_args()
+
+    diagram = rnn_steps()
+    diagram = SSRU()
     diagram.render_svg(args.path, height=512)
