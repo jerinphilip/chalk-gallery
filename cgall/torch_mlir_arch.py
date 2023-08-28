@@ -65,14 +65,14 @@ if __name__ == "__main__":
         }
     )
 
-    diagram += diagram.connect_outside("py", "ts", arrow_opts)
-    diagram += diagram.connect_outside("py", "ltc", arrow_opts)
-    diagram += diagram.connect_outside("ts", "ops", arrow_opts)
-    diagram += diagram.connect_outside("ops", "decomp", arrow_opts)
-    diagram += diagram.connect_outside("ltc", "decomp", arrow_opts)
-    diagram += diagram.connect_outside("decomp", "backend", arrow_opts)
-    diagram += diagram.connect_outside("backend", "la", arrow_opts)
-    diagram += diagram.connect_outside("backend", "tosa", arrow_opts)
-    diagram += diagram.connect_outside("backend", "mhlo", arrow_opts)
+    diagram = diagram.connect_outside("py", "ts", arrow_opts)
+    diagram = diagram.connect_outside("py", "ltc", arrow_opts)
+    diagram = diagram.connect_outside("ts", "ops", arrow_opts)
+    diagram = diagram.connect_outside("ops", "decomp", arrow_opts)
+    diagram = diagram.connect_outside("ltc", "decomp", arrow_opts)
+    diagram = diagram.connect_outside("decomp", "backend", arrow_opts)
+    diagram = diagram.connect_outside("backend", "la", arrow_opts)
+    diagram = diagram.connect_outside("backend", "tosa", arrow_opts)
+    diagram = diagram.connect_outside("backend", "mhlo", arrow_opts)
 
     diagram.render_svg(args.path, height=512)
