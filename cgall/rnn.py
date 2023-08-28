@@ -1,5 +1,6 @@
 from .color_map import qualitative
 from .cli import basic_parser
+from .prelude import connect_outside_elbow
 from chalk import *
 from colour import Color
 from chalk.shapes.arrowheads import ArrowHead, dart, tri  # noqa: F401
@@ -174,10 +175,11 @@ def SSRU():
     hspace = 2
     vspace = 2
 
+    xin = empty().with_envelope(forget).named("xin")
     # fmt: off
     row1 = hcat([mul.named("cf"), em, add.named("cf+fx")], hspace)
-    row2 = hcat([em, one_minus, mul.named("fx")], hspace)
-    row3 = hcat([forget, em, W], hspace)
+    row2 = hcat([forget, one_minus, mul.named("fx")], hspace)
+    row3 = hcat([xin, em, W], hspace)
     # row4 = hcat([junction, em, junction], hspace)
     # fmt: on
 
@@ -210,10 +212,10 @@ def SSRU():
     beside_cf = cf_loc + V2(-1 * (hspace + envelope.width / 2), 0)
     grid += ct_.translate(*beside_cf)
 
-    forget_loc = grid.get_subdiagram("forget").boundary_from(V2(0, 1))
-    envelope = forget.get_envelope()
-    below_forget = forget_loc + V2(0, 1 * (hspace + envelope.height / 2))
-    grid += xt.translate(*below_forget)
+    xin_loc = grid.get_subdiagram("xin").get_location()
+    envelope = em.get_envelope()
+    below_xin = xin_loc + V2(0, 1 * (hspace + envelope.height / 2))
+    grid += xt.translate(*below_xin)
 
     relu_absolute_loc = grid.get_subdiagram("relu").boundary_from(V2(0, -1))
     relu_absolute = grid.get_subdiagram("relu")
@@ -228,7 +230,7 @@ def SSRU():
 
     grid = grid.connect_outside("ct_", "cf")
     grid = grid.connect_outside("xt", "forget")
-    grid = grid.connect_outside("xt", "W")
+    grid = connect_outside_elbow(grid, "xt", "W", -1 * unit_y)
     grid = grid.connect_outside("cf+fx", "relu")
     grid = grid.connect_outside("cf+fx", "ct")
     grid = grid.connect_outside("relu", "ht")
