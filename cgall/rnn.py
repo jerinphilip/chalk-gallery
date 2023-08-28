@@ -113,13 +113,12 @@ def rnn_steps():
         xt = Node(f"$x_{{{tl}}}$").fill_color(blue).named(f"x{tl}")
         name = "A_" + str(t)
         single = vcat([ht, A.named(name), xt], vspace)
-        a1 = single.connect_outside(f"x{tl}", name)
-        a2 = single.connect_outside(name, f"h{tl}")
-        single = single + a1 + a2
+        single = single.connect_outside(f"x{tl}", name)
+        single = single.connect_outside(name, f"h{tl}")
         return single.center_xy()
 
     T = 3
-    equal = text("=", 12).fill_color(black).scale(1 / 12)
+    equal = text("=", 8).fill_color(black).scale(1 / 12).line_width(0.02)
     diagram = hcat(
         [single_recurrent, equal]
         + [Single(t) for t in range(T - 1)]
@@ -130,8 +129,7 @@ def rnn_steps():
     for t in range(1, T):
         previous = "A_" + str(t - 1)
         this = "A_" + str(t)
-        a = diagram.connect_outside(previous, this)
-        diagram = diagram + a
+        diagram = diagram.connect_outside(previous, this)
 
     return diagram
 
@@ -185,12 +183,12 @@ def SSRU():
 
     grid = vcat([row1, row2, row3], vspace)
 
-    grid += grid.connect_outside("cf", "cf+fx")
-    grid += grid.connect_outside("forget", "cf")
-    grid += grid.connect_outside("forget", "one_minus")
-    grid += grid.connect_outside("one_minus", "fx")
-    grid += grid.connect_outside("W", "fx")
-    grid += grid.connect_outside("fx", "cf+fx")
+    grid = grid.connect_outside("cf", "cf+fx")
+    grid = grid.connect_outside("forget", "cf")
+    grid = grid.connect_outside("forget", "one_minus")
+    grid = grid.connect_outside("one_minus", "fx")
+    grid = grid.connect_outside("W", "fx")
+    grid = grid.connect_outside("fx", "cf+fx")
 
     cf_plus_fx_loc = grid.get_subdiagram("cf+fx").boundary_from(V2(0, -1))
     cf_plus_fx = grid.get_subdiagram("cf+fx")
@@ -203,7 +201,7 @@ def SSRU():
         rectangle(rnn_envelope.width, rnn_envelope.height, radius=0.05)
         .fill_color(green)
         .line_color(green_fg)
-        .scale(1.04)
+        .scale(1.05)
     )
     grid = rnn_wrap.center_xy() + grid.center_xy()
 
@@ -228,19 +226,34 @@ def SSRU():
     beside_cf_plus_fx = cf_plus_fx_loc + V2(1 * (hspace + envelope.width / 2), 0)
     grid += ct.translate(*beside_cf_plus_fx)
 
-    grid += grid.connect_outside("ct_", "cf")
-    grid += grid.connect_outside("xt", "forget")
-    grid += grid.connect_outside("xt", "W")
-    grid += grid.connect_outside("cf+fx", "relu")
-    grid += grid.connect_outside("cf+fx", "ct")
-    grid += grid.connect_outside("relu", "ht")
+    grid = grid.connect_outside("ct_", "cf")
+    grid = grid.connect_outside("xt", "forget")
+    grid = grid.connect_outside("xt", "W")
+    grid = grid.connect_outside("cf+fx", "relu")
+    grid = grid.connect_outside("cf+fx", "ct")
+    grid = grid.connect_outside("relu", "ht")
     return grid
 
 
 if __name__ == "__main__":
     parser = basic_parser()
+    parser.add_argument(
+        "-d", "--diagram", type=str, choices=["rnn_steps", "ssru"], required=True
+    )
     args = parser.parse_args()
 
-    diagram = rnn_steps()
-    diagram = SSRU()
-    diagram.render_svg(args.path, height=512)
+    diagram = None
+    if args.diagram == "rnn_steps":
+        diagram = rnn_steps()
+    elif args.diagram == "ssru":
+        diagram = SSRU()
+    else:
+        print(args.diagram)
+        pass
+
+    if args.path.endswith(".svg"):
+        diagram.render_svg(args.path, height=512)
+    elif args.path.endswith(".png"):
+        diagram.render_png(args.path, height=512)
+    else:
+        print("Unknown output type")

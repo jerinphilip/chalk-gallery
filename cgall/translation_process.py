@@ -214,40 +214,37 @@ if __name__ == "__main__":
             spacing,
         ).center_xy()
 
-        a0 = decoder_stack.connect_outside(
+        decoder_stack = decoder_stack.connect_outside(
             "decoder_token", "embed", ArrowOpts(**default_arrow_opts)
         )
 
-        a1 = decoder_stack.connect_outside(
+        decoder_stack = decoder_stack.connect_outside(
             "embed", identifier, ArrowOpts(**bent_arrow_opts)
         )
 
-        a2 = decoder_stack.connect_outside(
+        decoder_stack = decoder_stack.connect_outside(
             identifier + "_in", identifier, ArrowOpts(**edconn)
         )
 
-        a3 = decoder_stack.connect_outside(
+        decoder_stack = decoder_stack.connect_outside(
             identifier, "predicted_token", ArrowOpts(**default_arrow_opts)
         )
 
-        decoder_stack = decoder_stack + a0 + a1 + a2 + a3  # + a2 + a3
         decoder_unrolled.append(decoder_stack)
 
     decoder_unrolled = hcat(decoder_unrolled, 1.5 * spacing).center_xy()
     for t in range(1, len(predictions)):
-        a = decoder_unrolled.connect_outside(
+        decoder_unrolled = decoder_unrolled.connect_outside(
             "decoder_" + str(t - 1),
             "decoder_" + str(t),
             ArrowOpts(**default_arrow_opts),
         )
 
-        a_edconn = decoder_unrolled.connect_outside(
+        decoder_unrolled = decoder_unrolled.connect_outside(
             "decoder_" + str(t - 1) + "_in",
             "decoder_" + str(t) + "_in",
             ArrowOpts(**edconn_bg),
         )
-
-        decoder_unrolled = a_edconn + decoder_unrolled + a
 
     encoder_stack = encoder_stack.translate(0, spacing)
 
