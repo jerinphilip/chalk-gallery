@@ -114,24 +114,25 @@ def sdpa():
     diagram = arrow_outside_up(diagram, "softmax", "mm2")
     diagram = arrow_outside_up_free(diagram, "mm2", vspace)
 
-    diagram = vcat(
-        [
-            diagram,
-            text("Scaled Dot Product Attention", CAPTION_SIZE)
-            .fill_color(black)
-            .scale(0.2),
-        ],
-        vspace,
-    )
+    # diagram = vcat(
+    #     [
+    #         diagram,
+    #         text("Scaled Dot Product Attention", CAPTION_SIZE)
+    #         .fill_color(black)
+    #         .scale(0.2),
+    #     ],
+    #     vspace,
+    # )
     return diagram
 
 
 def mha():
     hspace = 10
-    vspace = 8
+    vspace = 10
+
+    factor = 2.0
 
     def head(i):
-        factor = 2.0
         dx = -1 * head_id * factor
         dy = head_id * factor
         min_opacity = 0.2
@@ -141,7 +142,7 @@ def mha():
             Block("Linear", fill=linear_green, width=30).named(
                 "linear_" + x + "_" + str(i)
             )
-            for x in ["q", "k", "v"]
+            for x in ["v", "k", "q"]
         ]
         sdpa = Block(
             "Scaled Dot Product Attention", width=3 * 40 + 2 * hspace / 2, fill=purple
@@ -162,13 +163,31 @@ def mha():
     for head_id in range(num_heads):
         heads = heads + head(head_id)
 
+    heads = heads.center_xy().translate(-1 * factor, factor)
+
     concat = Block("Concat", fill=yellow).named("concat")
     out = Block("Linear", fill=linear_green, width=30).named("out")
+
+    labels = hcat(
+        [
+            Block("V", line_width=0, width=30).named("v"),
+            Block("K", line_width=0, width=30).named("k"),
+            Block("Q", line_width=0, width=30).named("q"),
+        ],
+        hspace,
+    )
+    split = hcat(
+        [
+            Block("Split", fill=yellow, width=30).named("split_" + x)
+            for x in ["v", "k", "q"]
+        ],
+        hspace,
+    )
 
     centered = list(
         map(
             lambda x: x.center_xy(),
-            [out, concat, heads],
+            [out, concat, heads, split, labels],
         )
     )
 
@@ -177,23 +196,32 @@ def mha():
         vspace,
     )
 
+    for x in ["q", "k", "v"]:
+        diagram = arrow_outside_up(diagram, x, "split_" + x, left=False)
+
     for head_id in range(num_heads):
-        # fmt: off
-        diagram = arrow_outside_up(diagram, "linear_q_"+ str(head_id), "sdpa_"+str(head_id), left=False)
-        diagram = arrow_outside_up(diagram, "linear_k_"+ str(head_id), "sdpa_"+str(head_id), left=False)
-        diagram = arrow_outside_up(diagram, "linear_v_"+ str(head_id), "sdpa_"+str(head_id), left=False)
-        # fmt: on
         diagram = arrow_outside_up(diagram, "sdpa_" + str(head_id), "concat")
+
+        for x in ["q", "k", "v"]:
+            diagram = arrow_outside_up(
+                diagram,
+                f"linear_{x}_" + str(head_id),
+                "sdpa_" + str(head_id),
+                left=False,
+            )
+            diagram = arrow_outside_up(
+                diagram, f"split_{x}", f"linear_{x}_" + str(head_id), left=False
+            )
 
     diagram = arrow_outside_up(diagram, "concat", "out")
     diagram = arrow_outside_up_free(diagram, "out", vspace)
-    diagram = vcat(
-        [
-            diagram,
-            text("MultiHead Attention", CAPTION_SIZE).fill_color(black).scale(0.2),
-        ],
-        vspace,
-    )
+    # diagram = vcat(
+    #     [
+    #         diagram,
+    #         text("MultiHead Attention", CAPTION_SIZE).fill_color(black).scale(0.2),
+    #     ],
+    #     vspace,
+    # )
     return diagram
 
 
