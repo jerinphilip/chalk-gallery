@@ -1,5 +1,6 @@
 from chalk import *
 from colour import Color
+from chalk.shapes.arrowheads import ArrowHead, dart, tri  # noqa: F401
 
 black = Color("#000000")
 white = Color("#ffffff")
@@ -63,3 +64,30 @@ def connect_outside_elbow(diagram, source, target, direction):
         0.2
     ).translate(pf.x, pf.y)
     return diagram + elbow_connector
+
+
+def arrow_outside_up(diagram, source, target, left=True):
+    s = diagram.get_subdiagram(source)
+    t = diagram.get_subdiagram(target)
+    p0 = s.boundary_from(-1 * unit_y)
+    pf = t.boundary_from(unit_y)
+
+    length = pf.y - p0.y
+
+    arrow = Trail.from_offsets([V2(0, 0), V2(0, length)]).stroke() + dart().rotate(
+        90
+    ).translate(0, length)
+    arrow = arrow.translate(p0.x, p0.y)
+    return diagram + arrow if left else arrow + diagram
+
+
+def arrow_outside_up_free(diagram, source, length, left=True):
+    s = diagram.get_subdiagram(source)
+    p0 = s.boundary_from(-1 * unit_y)
+
+    length = -1 * length
+    arrow = Trail.from_offsets([V2(0, 0), V2(0, length)]).stroke() + dart().rotate(
+        90
+    ).translate(0, length)
+    arrow = arrow.translate(p0.x, p0.y)
+    return diagram + arrow if left else arrow + diagram
